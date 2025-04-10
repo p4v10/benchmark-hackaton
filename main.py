@@ -7,7 +7,7 @@ outputs_dir = "assets/"
 # Load existing data or initialize a new dictionary
 def load_data():
     try:
-        with open('officers_data.json', 'r') as file:
+        with open(f'{outputs_dir}officers_data.json', 'r') as file:
             data = json.load(file)
     except FileNotFoundError:
         data = {}
@@ -83,7 +83,7 @@ if selected_video_url:
                                 break
                         save_data(officer_data)
         else:
-            # Button to generate segments
+            # Button to generate segments (only if no segments exist)
             if st.button("Segment Transcript"):
                 with st.spinner("Segmenting transcript..."):
                     segments = segment_transcript(selected_video_transcript)
@@ -96,6 +96,10 @@ if selected_video_url:
                             video['segments'] = segments
                             break
                     save_data(officer_data)
+
+                    # Force a rerun to show the segment button immediately after generation
+                    st.rerun()
+
     else:
         # Button to generate transcript
         if st.button("Generate Transcript"):
@@ -108,3 +112,6 @@ if selected_video_url:
                         video['transcript'] = transcriptions
                         break
                 save_data(officer_data)
+
+                # Force a rerun to display the "Segment Transcript" button after generating the transcript
+                st.rerun()
