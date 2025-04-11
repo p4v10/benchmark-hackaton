@@ -191,10 +191,10 @@ def evaluate_officer_behavior(segmented_summary):
     prompt = f"""
     Based on this analysis of the officer's actions:
 
-    Identify and Label Officer Behavior by Category (Using Segments)
+    Identify and Label Officer Behavior by Domain (Using Segments)
     Goal: Evaluate each segment for officer actions that demonstrate excellence behaviors, using the
-    categories and subcategories below.
-    Categories and their subcategories:
+    domains and subdomains below.
+    Domains and their subdomains:
     - Maximum Engagement: [Calls for Service,Arrests,Time to Engage,Self-initiated / Proactive]
     - Minimal Harm: [Officer Injury Avoidance,Citizen Injury Avoidance,External Complaint Reduction,Citizen Recognition]
     - Disciplined Conduct: [Attendance,Infractions,Accidents]
@@ -203,13 +203,13 @@ def evaluate_officer_behavior(segmented_summary):
     1. For each segment, assess whether the officer demonstrates one or more excellence
     behaviors.
     2. If a behavior is present:
-    a. Label the behavior category and subcategory
+    a. Label the behavior domain and subdomain
     b. Quote the relevant transcript excerpt
-    c. Summarize why the behavior fits the category/subcategory
+    c. Summarize why the behavior fits the domain/subdomain
     d. Reference the segment number and estimated timestamp
     Example Output:
-    **Category**: Minimal Harm
-    **Subcategory**: Citizen Injury Avoidance
+    **Domain**: Minimal Harm
+    **Subdomain**: Citizen Injury Avoidance
     **Quote**: Can you stand up if I assist you?
     **Summary**: The officer physically assists the suspect off the sidewalk
     while avoiding further harm, showing care during restraint.
