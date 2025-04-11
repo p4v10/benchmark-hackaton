@@ -1,10 +1,10 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import json, re
 from processing import summarize_youtube_video, segment_transcript, evaluate_officer_behavior
 
 outputs_dir = "assets/"
 
-# Streamlit UI
 st.set_page_config(page_title="Video Review - Officer Excellence in Action", layout="wide")
 st.image("img/benchmark_logo.png", width=300)
 st.title("Video Review - Officer Excellence in Action")
@@ -28,10 +28,10 @@ def save_data(data):
 with tabs[0]:
     st.subheader("Officer Behavior Summary")
     st.caption("Select an officer to review a summary of behavior evaluations across all uploaded videos, categorized by performance area.")
-
     officer_data = load_data()
-    # Show Descriptions Button
-    show_descriptions = st.checkbox("Show Excellence Domain Descriptions")
+
+
+    show_descriptions = st.toggle("Show Excellence Domain Descriptions")
 
     if show_descriptions:
         try:
@@ -44,95 +44,108 @@ with tabs[0]:
         except FileNotFoundError:
             st.error("Excellence Domain Descriptions file not found. Please ensure it's in the correct directory.")
 
-    summary_officer_name = st.selectbox("Select Officer", options=[""] + list(officer_data.keys()), key="summary_select")
+    col1, col2 = st.columns([1, 2])
+    with col1:
 
-    # Domains and Subdomains
-    domain_subdomains = {
-        "Maximum Engagement": ["Calls for Service", "Arrests", "Time to Engage", "Self-initiated / Proactive"],
-        "Minimal Harm": ["Officer Injury Avoidance", "Citizen Injury Avoidance", "External Complaint Reduction", "Citizen Recognition"],
-        "Disciplined Conduct": ["Attendance", "Infractions", "Accidents"],
-        "Team Player": ["Showing Up First", "Showing Up for Team", "Balance of Call Types"],
-        "Skillful Actions": ["Time to Resolve", "De-escalation", "Force Avoidance"]
-    }
+        summary_officer_name = st.selectbox("Select Officer", options=[""] + list(officer_data.keys()), key="summary_select")
 
-    selected_domain = st.selectbox("Select Domain (Required)", [""] + list(domain_subdomains.keys()))
-    selected_subdomains = []
+        # Domains and Subdomains
+        domain_subdomains = {
+            "Maximum Engagement": ["Calls for Service", "Arrests", "Time to Engage", "Self-initiated / Proactive"],
+            "Minimal Harm": ["Officer Injury Avoidance", "Citizen Injury Avoidance", "External Complaint Reduction", "Citizen Recognition"],
+            "Disciplined Conduct": ["Attendance", "Infractions", "Accidents"],
+            "Team Player": ["Showing Up First", "Showing Up for Team", "Balance of Call Types"],
+            "Skillful Actions": ["Time to Resolve", "De-escalation", "Force Avoidance"]
+        }
 
-    if selected_domain:
-        selected_subdomains = st.multiselect(
-            "Select Subdomains (Required)",
-            options=domain_subdomains[selected_domain]
-        )
+        selected_domain = st.selectbox("Select Domain (Required)", [""] + list(domain_subdomains.keys()))
+        selected_subdomains = []
 
-    # Only process if officer, domain, and subdomains are selected
-    if summary_officer_name and selected_domain and selected_subdomains:
-        evaluations = []
+        if selected_domain:
+            selected_subdomains = st.multiselect(
+                "Select Subdomains (Required)",
+                options=domain_subdomains[selected_domain]
+            )
 
-        for video in officer_data.get(summary_officer_name, []):
-            evaluation = video.get("evaluation", "")
-            if evaluation:
-                lines = evaluation.splitlines()
-                current_eval = {}
-                all_evals = []
+    with col2:
+        if summary_officer_name and selected_domain and selected_subdomains:
+            evaluations = []
 
-                for line in lines:
-                    if line.startswith("**Domain**:"):
-                        current_eval["domain"] = line.replace("**Domain**:", "").strip()
-                    elif line.startswith("**Subdomain**:"):
-                        current_eval["subdomain"] = line.replace("**Subdomain**:", "").strip()
-                    elif line.startswith("**Quote**:"):
-                        current_eval["quote"] = line.replace("**Quote**:", "").strip()
-                    elif line.startswith("**Summary**:"):
-                        current_eval["summary"] = line.replace("**Summary**:", "").strip()
-                    elif line.startswith("**Reference**:"):
-                        current_eval["reference"] = line.replace("**Reference**:", "").strip()
-                        # end of a complete block
-                        all_evals.append(current_eval)
-                        current_eval = {}
+            for video in officer_data.get(summary_officer_name, []):
+                evaluation = video.get("evaluation", "")
+                if evaluation:
+                    lines = evaluation.splitlines()
+                    current_eval = {}
+                    all_evals = []
 
-                for ev in all_evals:
-                    if ev["domain"] == selected_domain and ev["subdomain"] in selected_subdomains:
-                        match = re.search(r'\((.*?)\)', ev['reference'])
-                        if match:
-                            timing = match.group(1).split('-')[0].strip()
-                        summary_text = (
-                            f"**Quote**: \"{ev['quote']}\"\n\n"
-                            f"**Summary**: {ev['summary']}\n\n"
-                            f"**Reference**: {ev['reference']}"
+                    for line in lines:
+                        if line.startswith("**Domain**:"):
+                            current_eval["domain"] = line.replace("**Domain**:", "").strip()
+                        elif line.startswith("**Subdomain**:"):
+                            current_eval["subdomain"] = line.replace("**Subdomain**:", "").strip()
+                        elif line.startswith("**Quote**:"):
+                            current_eval["quote"] = line.replace("**Quote**:", "").strip()
+                        elif line.startswith("**Summary**:"):
+                            current_eval["summary"] = line.replace("**Summary**:", "").strip()
+                        elif line.startswith("**Reference**:"):
+                            current_eval["reference"] = line.replace("**Reference**:", "").strip()
+                            all_evals.append(current_eval)
+                            current_eval = {}
+
+                    for ev in all_evals:
+                        if ev["domain"] == selected_domain and ev["subdomain"] in selected_subdomains:
+                            match = re.search(r'\((.*?)\)', ev['reference'])
+                            if match:
+                                timing = match.group(1).split('-')[0].strip().replace('s', '')
+                            else:
+                                timing = "0" # fallback
+                            summary_text = (
+                                f"**Quote**: \"{ev['quote']}\"\n\n"
+                                f"**Summary**: {ev['summary']}\n\n"
+                                f"**Reference**: {ev['reference']}"
+                            )
+                            evaluations.append({
+                                "subdomain": ev["subdomain"],
+                                "title": video["title"],
+                                "summary": summary_text,
+                                "video": video["url"],
+                                "start_time": timing
+                            })
+
+            if evaluations:
+                st.markdown(f"### 🏅 {selected_domain}")
+                for eval_entry in evaluations:
+                    with st.expander(f"📹 {eval_entry['title']} — {eval_entry['subdomain']}", expanded=False):
+                        st.markdown(f"**Subdomain**: {eval_entry['subdomain']}")
+                        st.markdown(f"**Video Title**: {eval_entry['title']}")
+                        st.markdown(eval_entry['summary'])
+
+                        video_url = eval_entry['video']
+                        start_time = eval_entry.get("start_time", "0")  # fallback
+                        st.markdown(f"**Reference Video**:")
+                        components.html(
+                            f"""
+                            <div style="text-align:left;">
+                                <iframe width="700" height="380"
+                                src="{video_url.replace('watch?v=', 'embed/')}?start={start_time}"
+                                frameborder="0" allowfullscreen></iframe>
+                            </div>
+                            """,
+                            height=400
                         )
-                        evaluations.append({
-                            "subdomain": ev["subdomain"],
-                            "title": video["title"],
-                            "summary": summary_text,
-                            "video": video["url"]
-                        })
+            else:
+                st.info("No evaluations match the selected subdomains.")
+        elif summary_officer_name and (not selected_domain or not selected_subdomains):
+            st.warning("Please select both a domain and at least one subdomain to view evaluations.")
 
-        if evaluations:
-            st.markdown(f"### 🏅 {selected_domain}")
-            for eval_entry in evaluations:
-                st.markdown(f"**Subdomain**: {eval_entry['subdomain']}")
-                st.markdown(f"**Video Title**: {eval_entry['title']}")
-                st.markdown(f"**Video test**: {eval_entry['video']}")
-                st.markdown(eval_entry['summary'])
-                # link to video at time referenced
-                st.video(eval_entry['video'], start_time=timing)
-                st.markdown("---")
-        else:
-            st.info("No evaluations match the selected subdomains.")
-    elif summary_officer_name and (not selected_domain or not selected_subdomains):
-        st.warning("Please select both a domain and at least one subdomain to view evaluations.")
-    
 
 with tabs[1]:
-    # Load existing data
     officer_data = load_data()
     st.subheader("Manage Officer Video and Generate Insights")
     st.caption("Use this tab to select an officer, view their body cam footage, generate transcripts, segment dialogue, and evaluate behavior—all in one streamlined workflow with data saved automatically.")
-    # Input for officer's name (or selection from the dropdown)
+
     officer_name = st.selectbox("Select Officer", options=[""] + list(officer_data.keys()))
 
-
-    # Initialize placeholders
     selected_video_url = ""
     selected_video_transcript = ""
     selected_video_segments = ""
@@ -145,7 +158,7 @@ with tabs[1]:
 
             selected_video_entry = next(
                 (video for video in officer_data[officer_name]
-                if f"{video['title']} - {video['url']}" == selected_video),
+                 if f"{video['title']} - {video['url']}" == selected_video),
                 None
             )
 
@@ -155,101 +168,93 @@ with tabs[1]:
                 selected_video_segments = selected_video_entry.get('segments', '')
                 selected_video_evaluation = selected_video_entry.get('evaluation', '')
 
-    # Show the YouTube video using the URL if selected
     if selected_video_url:
-        st.subheader("Body Cam Footage")
-        st.video(selected_video_url)
+        col1, col2 = st.columns([1.3, 1.7])
 
-        # Display transcript
-        if selected_video_transcript:
-            st.subheader("Existing Transcript")
+        with col1:
+            components.html(
+                f"""
+                <div style="text-align:left;">
+                    <iframe width="700px" height="480"
+                    src="{selected_video_url.replace("watch?v=", "embed/")}"
+                    frameborder="0" allowfullscreen></iframe>
+                </div>
+                """,
+                height=500
+            )
 
-            # Join transcript list into a string with line breaks
-            formatted_transcript = "\n".join(selected_video_transcript)
+        with col2:
+            if selected_video_transcript:
+                formatted_transcript = "\n".join(selected_video_transcript)
 
-            # Estimate height: 20 pixels per line, minimum of 300
-            num_lines = len(selected_video_transcript)
-            calculated_height = max(300, num_lines * 20)
+                with st.expander("📝 Existing Transcript", expanded=False):
+                    st.text_area(
+                        "*Transcripts are generated by Artificial Intelligence. You may directly edit copy to ensure the transcript matches with the observed behavior.",
+                        formatted_transcript,
+                        height=280
+                    )
 
-            st.text_area("*Transcripts are generated by Artificial Intelligence. You may directly edit copy to ensure the transcript matches with the observed behavior.", formatted_transcript, height=calculated_height)
+                if selected_video_segments:
+                    with st.expander("🧩 Segmented Transcript", expanded=False):
+                        st.text_area(
+                            "*Segments are generated by Artificial Intelligence. You may directly edit copy to ensure the summarized segments match with the observed behavior.",
+                            selected_video_segments,
+                            height=280
+                        )
 
-            # Display segments
-            if selected_video_segments:
-                st.subheader("Segmented Transcript")
-                st.text_area("*Segments are generated by Artificial Intelligence. You may directly edit copy to ensure the Summarized segments match with the observed behavior.", selected_video_segments, height=700)
+                    if selected_video_evaluation:
+                        with st.expander("🔍 Officer Behavior Evaluation", expanded=False):
+                            st.text_area(
+                                "*Evaluations are generated by Artificial Intelligence. You may directly edit copy to ensure the summary matches with the observed behavior.",
+                                selected_video_evaluation,
+                                height=280
+                            )
+                    else:
+                        if st.button("Evaluate Officer Behavior"):
+                            with st.spinner("Evaluating officer behavior..."):
+                                evaluation = evaluate_officer_behavior(selected_video_segments)
+                                with st.expander("🔍 Officer Behavior Evaluation", expanded=False):
+                                    st.text_area("Evaluation", evaluation, height=300)
+                                for video in officer_data[officer_name]:
+                                    if video['url'] == selected_video_url:
+                                        video['evaluation'] = evaluation
+                                        break
+                                save_data(officer_data)
+                                st.rerun()
 
-                # Display evaluation or show evaluation button
-                if selected_video_evaluation:
-                    st.subheader("Officer Behavior Evaluation")
-                    st.text_area("*Evaluations are generated by Artificial Intelligence. You may directly edit copy to ensure the Summary matches with the observed behavior.", selected_video_evaluation, height=300)
                 else:
-                    if st.button("Evaluate Officer Behavior"):
-                        with st.spinner("Evaluating officer behavior..."):
-                            evaluation = evaluate_officer_behavior(selected_video_segments)
-                            st.subheader("Officer Behavior Evaluation")
-                            st.text_area("Evaluation", evaluation, height=300)
-
-                            # Save evaluation to JSON
+                    if st.button("Segment Transcript"):
+                        with st.spinner("Segmenting transcript..."):
+                            segments = segment_transcript(selected_video_transcript)
+                            with st.expander("🧩 Segmented Transcript", expanded=False):
+                                st.text_area(
+                                    "*Segments are generated by Artificial Intelligence. You may directly edit copy to ensure the summarized segments match with the observed behavior.",
+                                    segments,
+                                    height=280
+                                )
                             for video in officer_data[officer_name]:
                                 if video['url'] == selected_video_url:
-                                    video['evaluation'] = evaluation
+                                    video['segments'] = segments
                                     break
                             save_data(officer_data)
-            else:
-                # Button to generate segments (only if no segments exist)
-                if st.button("Segment Transcript"):
-                    with st.spinner("Segmenting transcript..."):
-                        segments = segment_transcript(selected_video_transcript)
-                        st.subheader("Segmented Transcript")
-                        st.text_area("*Segments are generated by Artificial Intelligence. You may directly edit copy to ensure the Summarized segments match with the observed behavior.", segments, height=300)
+                            st.rerun()
 
-                        # Save segments to JSON
+            else:
+                if st.button("Generate Transcript"):
+                    with st.spinner("Transcripting... Please wait."):
+                        transcriptions = summarize_youtube_video(selected_video_url, outputs_dir)
+                        with st.expander("📝 Existing Transcript", expanded=False):
+                            st.text_area(
+                                "*Transcripts are generated by Artificial Intelligence. You may directly edit copy to ensure the transcript matches with the observed behavior.",
+                                transcriptions,
+                                height=280
+                            )
                         for video in officer_data[officer_name]:
                             if video['url'] == selected_video_url:
-                                video['segments'] = segments
+                                video['transcript'] = transcriptions
                                 break
                         save_data(officer_data)
-
-                        # Force a rerun to show the segment button immediately after generation
                         st.rerun()
-
-        else:
-            # Button to generate transcript
-            if st.button("Generate Transcript"):
-                with st.spinner("Transcripting... Please wait."):
-                    transcriptions = summarize_youtube_video(selected_video_url, outputs_dir)
-                    st.text_area("*Transcripts are generated by Artificial Intelligence. You may directly edit copy to ensure the transcript matches with the observed behavior.", transcriptions, height=300)
-
-                    for video in officer_data[officer_name]:
-                        if video['url'] == selected_video_url:
-                            video['transcript'] = transcriptions
-                            break
-                    save_data(officer_data)
-
-                    # Force a rerun to display the "Segment Transcript" button after generating the transcript
-                    st.rerun()
-
-def extract_matching_evaluation(evaluation_text, target_domain, target_subdomain):
-    lines = evaluation_text.splitlines()
-    capture = False
-    result_lines = []
-
-    for line in lines:
-        if line.startswith("**Domain**:"):
-            capture = target_domain in line
-            result_lines = [line] if capture else []
-        elif capture and line.startswith("**Subdomain**:"):
-            capture = target_subdomain in line
-            if capture:
-                result_lines.append(line)
-            else:
-                result_lines = []
-        elif capture:
-            if line.strip() == "":
-                break  # End of this evaluation section
-            result_lines.append(line)
-
-    return "\n".join(result_lines)
 
 with tabs[2]:
     st.subheader("Add a New Officer Video")
@@ -283,4 +288,4 @@ with tabs[2]:
     # Show success message after rerun
     if st.session_state.get("video_added", False):
         st.success(f"Video added for Officer '{new_officer}'!")
-        st.session_state.video_added = False  # Reset for next time
+        st.session_state.video_added = False
