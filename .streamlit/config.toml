@@ -1,0 +1,6 @@
+[theme]
+primaryColor = "#184784"       # Main accent (e.g., button color)
+backgroundColor = "#F4F4F4"    # App background
+secondaryBackgroundColor = "#FFFFFF"  # Sidebar and widget background
+textColor = "#262730"          # Main text color
+font = "sans serif"            # Options: "sans serif", "serif", "monospace"

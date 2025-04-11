@@ -193,18 +193,24 @@ def evaluate_officer_behavior(segmented_summary):
 
     Identify and Label Officer Behavior by Category (Using Segments)
     Goal: Evaluate each segment for officer actions that demonstrate excellence behaviors, using the
-    categories below.
-
+    categories and subcategories below.
+    Categories and their subcategories:
+    - Maximum Engagement: [Calls for Service,Arrests,Time to Engage,Self-initiated / Proactive]
+    - Minimal Harm: [Officer Injury Avoidance,Citizen Injury Avoidance,External Complaint Reduction,Citizen Recognition]
+    - Disciplined Conduct: [Attendance,Infractions,Accidents]
+    - Team Player: [Showing Up First,Showing Up for Team,Balance of Call Types]
+    - Skillful Actions: [Time to Resolve,De-escalation,Force Avoidance]
     1. For each segment, assess whether the officer demonstrates one or more excellence
     behaviors.
     2. If a behavior is present:
-    a. Label the behavior category
+    a. Label the behavior category and subcategory
     b. Quote the relevant transcript excerpt
-    c. Summarize why the behavior fits the category
+    c. Summarize why the behavior fits the category/subcategory
     d. Reference the segment number and estimated timestamp
     Example Output:
     **Category**: Minimal Harm
-    **Quote**: "Can you stand up if I assist you?"
+    **Subcategory**: Citizen Injury Avoidance
+    **Quote**: Can you stand up if I assist you?
     **Summary**: The officer physically assists the suspect off the sidewalk
     while avoiding further harm, showing care during restraint.
     **Reference**: Segment 2 – Suspect Secured & Interviewed (Early-Midpoint)
