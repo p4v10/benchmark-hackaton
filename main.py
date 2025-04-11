@@ -1,5 +1,5 @@
 import streamlit as st
-import json
+import json, re
 from processing import summarize_youtube_video, segment_transcript, evaluate_officer_behavior
 
 outputs_dir = "assets/"
@@ -92,6 +92,9 @@ with tabs[0]:
 
                 for ev in all_evals:
                     if ev["domain"] == selected_domain and ev["subdomain"] in selected_subdomains:
+                        match = re.search(r'\((.*?)\)', ev['reference'])
+                        if match:
+                            timing = match.group(1).split('-')[0].strip()
                         summary_text = (
                             f"**Quote**: \"{ev['quote']}\"\n\n"
                             f"**Summary**: {ev['summary']}\n\n"
@@ -100,7 +103,8 @@ with tabs[0]:
                         evaluations.append({
                             "subdomain": ev["subdomain"],
                             "title": video["title"],
-                            "summary": summary_text
+                            "summary": summary_text,
+                            "video": video["url"]
                         })
 
         if evaluations:
@@ -108,7 +112,10 @@ with tabs[0]:
             for eval_entry in evaluations:
                 st.markdown(f"**Subdomain**: {eval_entry['subdomain']}")
                 st.markdown(f"**Video Title**: {eval_entry['title']}")
+                st.markdown(f"**Video test**: {eval_entry['video']}")
                 st.markdown(eval_entry['summary'])
+                # link to video at time referenced
+                st.video(eval_entry['video'], start_time=timing)
                 st.markdown("---")
         else:
             st.info("No evaluations match the selected subdomains.")
